@@ -1,7 +1,7 @@
 // 처음 한 번 받은 뒤에는 인터넷 없이 동작하도록 앱 파일·모델·런타임을 저장해 둔다.
-const CACHE = "kkaman-v4";
+const CACHE = "kkaman-v5";
 const CORE = ["./", "index.html", "app.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png",
-  "model/yolo26n.onnx", "vendor/ort/ort.min.js", "vendor/ort/ort-wasm-simd-threaded.mjs", "vendor/ort/ort-wasm-simd-threaded.wasm"];
+  "model/yolo26n.onnx", "model/face_detection_yunet_2023mar.onnx", "vendor/ort/ort.min.js", "vendor/ort/ort-wasm-simd-threaded.mjs", "vendor/ort/ort-wasm-simd-threaded.wasm"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));

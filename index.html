@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>까만 막대</title>
-<meta name="description" content="사진 속 사람과 화면을 까만 막대로 가리고 위치정보를 지웁니다. 사진은 기기 밖으로 나가지 않습니다.">
+<meta name="description" content="사진 속 얼굴·사람·화면·차량을 까만 막대로 가리고 위치정보를 지웁니다. 사진은 기기 밖으로 나가지 않습니다.">
 <meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <link rel="manifest" href="manifest.webmanifest">
@@ -105,6 +105,15 @@ input[type=range]{width:100%;accent-color:var(--sig)}
 .limits li b{color:var(--ink)}
 footer{margin-top:40px;font:12px/1.7 var(--mono);color:var(--faint)}
 footer b{color:var(--dim);font-weight:400}
+/* ---------- 여러 장 ---------- */
+.nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.nav button{padding:10px 14px;font-size:14px}
+#nav-cur{font:700 15px var(--mono)}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin-bottom:6px}
+.thumb{position:relative;flex:none;width:72px;height:72px;padding:0;border:1px solid var(--faint);background:#111;color:var(--dim);justify-content:center}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb[aria-current="true"]{border:2px solid var(--sig)}
+.thumb .seen{position:absolute;right:2px;bottom:2px;background:var(--sig);color:#000;font:700 11px/1 var(--mono);padding:2px 3px}
 .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
@@ -113,7 +122,7 @@ footer b{color:var(--dim);font-weight:400}
   <div class="tag"><span><span class="dot">●</span> 까만 막대</span><span>on-device</span><span>no signup</span><span>offline</span></div>
 
   <h1>올리기 전에,<br><span class="r">얼굴은</span> 까맣게.</h1>
-  <p class="lead">사진 속 <b>사람과 화면</b>을 까만 막대로 덮고, 사진에 숨은 <b>위치정보</b>를 지웁니다. 사진은 이 기기 밖으로 나가지 않습니다.</p>
+  <p class="lead">사진 속 <b>얼굴·사람·화면</b>(원하면 <b>차량</b>까지)을 까만 막대로 덮고, 사진에 숨은 <b>위치정보</b>를 지웁니다. 사진은 이 기기 밖으로 나가지 않습니다.</p>
 
   <div class="facts" aria-label="특징">
     <div><b>01 · 기기 안에서</b><span>AI가 브라우저에서 돌아요. 서버로 사진을 보내지 않아요.</span></div>
@@ -125,8 +134,8 @@ footer b{color:var(--dim);font-weight:400}
     <div class="drop" id="drop">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <label class="btn primary big" for="file">사진 고르기</label>
-      <input id="file" class="visually-hidden" type="file" accept="image/*">
-      <span class="hint">끌어다 놓기 · 붙여넣기도 됩니다</span>
+      <input id="file" class="visually-hidden" type="file" accept="image/*" multiple>
+      <span class="hint">여러 장 한꺼번에 · 끌어다 놓기 · 붙여넣기</span>
       <span class="samples">예시로 해 보기
         <button type="button" data-sample="samples/bus.jpg">거리 사진</button>
         <button type="button" data-sample="samples/laptop-desk.jpg">노트북 화면</button>
@@ -137,31 +146,38 @@ footer b{color:var(--dim);font-weight:400}
 
   <section id="stage" aria-label="결과">
     <div class="sec-h"><b>확인하기</b><span>막대를 눌러 끄기 · 끌어서 추가</span></div>
+    <div class="nav" id="nav" hidden>
+      <button type="button" id="prev" aria-label="이전 사진">← 이전</button><span id="nav-cur"></span><button type="button" id="next" aria-label="다음 사진">다음 →</button>
+    </div>
+    <div class="strip" id="strip" hidden aria-label="고른 사진들"></div>
     <div class="frame"><canvas id="view" aria-label="가린 결과 미리보기"></canvas></div>
     <p class="howto"><kbd>누르기</kbd> 막대 켜기/끄기 &nbsp; <kbd>끌기</kbd> 새 막대 &nbsp; 노란 점선 = 꺼 둔 막대</p>
-    <div class="warn" id="warn">AI는 사람을 <b>놓칠 수 있어요.</b> 작게 찍힌 사람, 뒷모습, 거울·포스터 속 사람, 번호판·송장은 직접 확인하고 끌어서 가리세요.</div>
+    <div class="warn" id="warn">AI는 사람을 <b>놓칠 수 있어요.</b> 공개 시험 사진에서 크게 찍힌 사람은 <b>15명 중 1명</b>, 작게 찍힌 사람은 <b>3명 중 2명</b>을 놓쳤어요. 뒷모습, 거울·포스터 속 사람, 번호판·송장은 직접 확인하고 끌어서 가리세요.</div>
     <div class="row">
-      <button class="primary" id="save" type="button">사진 저장</button>
+      <button class="primary" id="save" type="button">이 사진 저장</button>
+      <button id="saveall" type="button" hidden>모두 저장</button>
       <button id="share" type="button" hidden>공유</button>
       <button id="undo" type="button">마지막 막대 지우기</button>
-      <button id="reset" type="button">다른 사진</button>
+      <button id="reset" type="button">모두 지우기</button>
     </div>
     <div class="controls">
       <div>
         <span class="lbl">사람을 가릴 범위</span>
         <span class="seg" role="group" aria-label="사람을 가릴 범위">
-          <button type="button" data-cover="head" aria-pressed="true">머리 쪽</button>
+          <button type="button" data-cover="face" aria-pressed="true">얼굴</button>
           <button type="button" data-cover="body" aria-pressed="false">몸 전체</button>
         </span>
       </div>
       <div>
         <span class="lbl">추가로 가리기</span>
         <label class="check"><input type="checkbox" id="screens" checked> 화면 (모니터·노트북·휴대폰)</label>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="vehicles"> 차량 (자동차·버스·트럭·오토바이)</label>
+        <div class="note">번호판만 따로 찾지는 못해서 차 전체를 가려요.</div>
       </div>
       <div class="wide">
         <label class="lbl" for="sens">민감도</label>
         <div class="row" style="flex-wrap:nowrap;gap:14px"><span class="sensv" id="sensv"></span><input type="range" id="sens" min="0.10" max="0.60" step="0.05" value="0.20"></div>
-        <div class="note">왼쪽일수록 더 많이 가려요. 놓치는 것보다 더 가리는 쪽이 안전합니다.</div>
+        <div class="note">왼쪽일수록 더 많이 가려요. 놓치는 것보다 더 가리는 쪽이 안전합니다. 사람이 많거나 멀리 찍힌 사진은 0.10까지 내려 보세요.</div>
       </div>
       <div class="wide"><span class="lbl">찾은 것</span><ul class="list" id="list"></ul></div>
     </div>
@@ -170,16 +186,17 @@ footer b{color:var(--dim);font-weight:400}
   <details class="limits">
     <summary>이 도구가 못 하는 것</summary>
     <ul>
-      <li><b>얼굴 위치를 따로 찾지 않아요.</b> '머리 쪽'은 사람 상자의 위쪽을 어림한 값이라 누워 있거나 잘린 사람은 빗나갈 수 있어요.</li>
-      <li><b>번호판, 택배 송장, 이름표, 화면 속 글자</b>는 찾지 못해요. 직접 끌어서 가리세요.</li>
-      <li>모델(YOLO26n, COCO 80종)이 사람을 놓치는 비율은 아직 재지 않았어요.</li>
+      <li><b>얼굴을 못 찾은 사람</b>(뒷모습, 작게 찍힘)은 사람 상자 위쪽을 어림해서 가려요. 누워 있거나 잘린 사람은 빗나갈 수 있어요.</li>
+      <li>얼굴 모델은 사진 전체를 640px로 줄여서 봐서, 큰 사진 속 <b>아주 작은 얼굴</b>은 놓치기 쉬워요.</li>
+      <li><b>번호판, 택배 송장, 이름표, 화면 속 글자</b>는 찾지 못해요. 차량은 차 전체를 가리는 것만 돼요. 나머지는 직접 끌어서 가리세요.</li>
+      <li>사람을 놓치는 비율은 공개 사진 400장으로 잰 값이라, 내 사진에서는 다를 수 있어요.</li>
       <li>저장본은 새로 그린 그림이라 EXIF가 없어요. 원본 파일은 그대로 남아요.</li>
     </ul>
   </details>
 
   <footer>
     처리: 이 브라우저 안 (ONNX Runtime Web) · 처음 한 번 약 20MB를 받은 뒤엔 인터넷 없이 동작<br>
-    <b>모델</b> Ultralytics YOLO26n (AGPL-3.0) · <b>소스</b> AGPL-3.0
+    <b>모델</b> Ultralytics YOLO26n (AGPL-3.0), OpenCV Zoo YuNet 얼굴 (MIT) · <b>소스</b> AGPL-3.0
   </footer>
 </main>
 
