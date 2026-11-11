@@ -151,7 +151,52 @@ py -m http.server 8765
 | `tools/check_yunet.py` | 얼굴 모델 출력 풀이를 OpenCV와 대조 |
 | `eval/result.json` | 측정 결과 (민감도별 표, 놓친 사람 목록) |
 | `vendor/ort/` | onnxruntime-web 1.20.1 (MIT). CDN 대신 직접 포함해서 외부 요청이 없음 |
-| `samples/` | `bus.jpg` (Ultralytics 예제, AGPL-3.0), `laptop-desk.jpg` (Wikimedia Commons, CC0) |
+| `samples/` | 예시 사진 4장. 출처는 아래 '사진 출처' 절 |
+
+## 사진 출처, 그리고 저장소에 넣지 않은 사진
+
+이 앱은 사진 속 사람과 번호판을 지키려고 만든 도구입니다. 그래서 개발과 측정에 쓴 사진도 같은 기준으로 다뤘습니다. **조건 없이 다시 나눠도 되는 사진만 저장소에 넣고**, 나머지는 어디서 받았는지만 남겼습니다.
+
+### 저장소에 들어 있는 사진 (`samples/`, 4장)
+
+화면의 '예시로 해 보기' 버튼으로 열리는 사진입니다.
+
+| 파일 | 원본 | 찍은 사람 | 라이선스 | 바꾼 것 |
+|---|---|---|---|---|
+| `bus.jpg` | Ultralytics 패키지 예제 사진 (`ultralytics/assets/bus.jpg`) | Ultralytics | AGPL-3.0 저장소에 포함된 예제 | 없음 |
+| `laptop-desk.jpg` | [Laptop on a neat desk (Unsplash)](https://commons.wikimedia.org/wiki/File:Laptop_on_a_neat_desk_(Unsplash).jpg) | Unsplash 사진 (Wikimedia Commons) | CC0 1.0 | 1280px 축소본 |
+| `plate-excavator.jpg` | [20240607 대한민국의 차량번호판.jpg](https://commons.wikimedia.org/wiki/File:20240607_%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD%EC%9D%98_%EC%B0%A8%EB%9F%89%EB%B2%88%ED%98%B8%ED%8C%90.jpg) (2024-06-07, 굴착기 번호판) | Striker9498 (직접 찍음) | CC0 1.0 | 1280px 축소본, 다시 저장하며 메타데이터 제거 |
+| `plate-camaro.jpg` | [Red Chevrolet Camaro with South Korean license plate.jpg](https://commons.wikimedia.org/wiki/File:Red_Chevrolet_Camaro_with_South_Korean_license_plate.jpg) (2004~2006) | FLJuJitsu (직접 찍음) | 퍼블릭 도메인 | 1280px 축소본, 다시 저장하며 메타데이터 제거 |
+
+- 번호판 예시 2장은 한국 번호판 사진 50장 가운데 **CC0·퍼블릭 도메인인 2장 전부**입니다. 이 둘만 출처 표기나 같은 라이선스 유지 같은 조건 없이 다시 나눌 수 있습니다.
+- 두 사진에는 실제 번호판이 보입니다. 찍은 사람이 누구나 쓰도록 공개한 사진이지만, **차 주인에게 동의를 받은 것은 아닙니다**(라이선스는 찍은 사람이 주는 허락입니다). 앱에서 열면 번호판이 바로 가려지는 것을 보여 주려고 넣었습니다. 지워 달라는 요청이 있으면 바로 뺍니다.
+- 굴착기 사진에서 번호판과 뒤쪽 사람(머리 쪽 어림값)은 가려지지만, 차에 붙은 간판 속 전화번호는 그대로 보입니다. 간판 글자는 이 앱이 찾지 못하는 것의 예입니다.
+
+### 측정에만 쓰고 저장소에 넣지 않은 사진
+
+| 사진 | 어디서 | 몇 장 | 무엇에 썼나 | 받는 방법 |
+|---|---|---|---|---|
+| COCO val2017 일부 | [cocodataset.org](https://cocodataset.org) (원래 Flickr 사진) | 500장, 83MB | 사람·얼굴을 놓치는 비율, 번호판을 잘못 가리는 비율 | 사진 번호가 `eval/result.json`의 `images`에 있음. `http://images.cocodataset.org/val2017/<번호>.jpg` |
+| 한국 번호판 사진 | Wikimedia Commons 'Automobiles with license plates of South Korea' 분류 | 50장, 12MB | 번호판을 찾는 비율 | 파일 이름·라이선스·찍은 사람·원본 링크가 `eval/plates_kr_sources.tsv`에 있음 |
+
+**GitHub에 올리지 않은 이유**
+
+1. **라이선스가 사진마다 다르고, 다시 나누는 데 조건이 붙습니다.**
+   - COCO 사진은 COCO가 아니라 Flickr에 올린 사람들의 것입니다. COCO 측도 사진 저작권은 자기들에게 없고, 사진을 쓰려면 Flickr 이용 약관을 따라야 한다고 밝힙니다. 사진마다 붙은 라이선스도 CC BY, CC BY-SA, CC BY-NC(상업적 이용 금지), CC BY-NC-SA, CC BY-ND·BY-NC-ND(변경 금지) 등으로 다릅니다. 이 저장소는 AGPL-3.0이고 누구나 상업적으로 쓸 수 있는데, 비상업·변경 금지 사진을 함께 넣으면 받는 사람이 지킬 조건이 사진마다 달라집니다.
+   - 한국 번호판 사진 50장의 라이선스는 다음과 같습니다.
+     - CC BY-SA 4.0: 37장
+     - CC BY-SA 3.0: 10장
+     - CC BY 3.0: 1장
+     - CC0: 1장
+     - 퍼블릭 도메인: 1장
+
+     CC BY·BY-SA는 파일마다 찍은 사람과 라이선스를 표시해야 하고, BY-SA는 고친 사진도 같은 라이선스로 내야 합니다. 50장을 올리면 이 조건을 모두 정확히 지켜야 하는데, 측정용 사진을 나눠 주는 데 그럴 이유가 없었습니다. 조건이 없는 CC0·퍼블릭 도메인 2장만 위 예시로 넣었습니다.
+2. **찍힌 사람과 차 주인은 동의하지 않았습니다.** 공개 라이선스는 찍은 사람이 주는 허락이지, 사진 속 사람이나 번호판 주인이 동의했다는 뜻이 아닙니다. 측정에 쓴 COCO 500장 중 400장에는 사람이 찍혀 있습니다. 차량 번호는 다른 정보와 합치면 누구 차인지 알 수 있어서, 국내에서는 개인정보로 다뤄질 수 있습니다. 이런 사진을 개인정보를 가리는 도구의 저장소에 한 번 더 모아 올리는 것은 이 앱의 목적과 맞지 않습니다.
+3. **민감한 장면이 있습니다.** 번호판 사진 중 2장은 서울 소방재난본부가 올린 교통사고 현장 사진입니다.
+4. **다시 받을 수 있게 목록을 남겼습니다.** 사진이 없어도 위 '받는 방법'으로 같은 사진을 받아서 `tools/eval_recall.py`, `tools/eval_plates.py`로 같은 숫자를 다시 낼 수 있습니다. 사진이 원본 사이트에서 지워지면 그 사진은 측정에서 빠집니다.
+5. **용량.** 합쳐서 약 95MB입니다. 앱을 받을 때마다 측정용 사진까지 받을 필요는 없습니다.
+
+개발 중에 화면을 확인하려고 쓴 개인 사진(작성자 본인 그림 2장)도 저장소에 넣지 않았습니다. 확인한 뒤 바로 지웠습니다.
 
 ## 라이선스
 
