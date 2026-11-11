@@ -89,15 +89,32 @@ python tools/eval_recall.py <val2017 사진 폴더> <labels/val2017 폴더> <사
 - **번호판, 택배 송장, 이름표, 화면 속 글자**는 찾지 못합니다. COCO 80종에 없기 때문입니다. 차량은 차 전체를 가리는 것만 됩니다.
 - HEIC 사진은 브라우저가 열 수 있을 때만 됩니다(Safari는 가능, 일부 Chrome은 불가).
 
-## 실행
+## 실행 (내 컴퓨터에 내려받아 실행하기)
 
-정적 파일뿐이라 아무 정적 서버로 열면 됩니다. 서비스 워커 때문에 `file://`가 아니라 `http://localhost`로 열어야 합니다.
+설치할 패키지가 없습니다. 모델(`model/`)과 실행 엔진(`vendor/ort/`)이 저장소에 들어 있고, 모든 계산이 브라우저 안에서 일어납니다.
+필요한 것은 **브라우저**와 파일을 띄울 **아무 정적 서버**(아래는 Python 3에 들어 있는 것)뿐입니다. git이 없으면 GitHub의 **Code → Download ZIP** 으로 받아 압축을 풀어도 됩니다.
+
+macOS / Linux:
 
 ```bash
+git clone https://github.com/maidysound-netizen/privacy-marker.git
+cd privacy-marker
 python3 -m http.server 8765
 ```
 
-브라우저에서 `http://localhost:8765`를 엽니다.
+Windows (PowerShell):
+
+```powershell
+git clone https://github.com/maidysound-netizen/privacy-marker.git
+cd privacy-marker
+py -m http.server 8765
+```
+
+그다음 브라우저에서 `http://localhost:8765` 를 엽니다. 끌 때는 터미널에서 Ctrl+C.
+
+- `index.html` 을 더블클릭해서 여는 것(`file://`)으로는 동작하지 않습니다. 브라우저가 `file://` 에서는 모델 파일 읽기와 서비스 워커를 막기 때문입니다.
+- 처음 열 때 모델(약 10 MB)을 읽느라 몇 초 걸립니다.
+- 측정 스크립트(`tools/eval_recall.py`)를 다시 돌리려면 `pip install onnxruntime opencv-python numpy` 와 COCO val2017 사진·라벨이 따로 필요합니다(아래 '측정' 절 참고). 앱 실행에는 필요 없습니다.
 
 ## 파일
 
