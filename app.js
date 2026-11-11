@@ -319,6 +319,21 @@ function renderList(bars) {
     (bars.some((b) => !b.on) ? " · 노란 점선은 끈 막대" : ""));
   if (guess && state.cover === "face") li("얼굴을 못 찾은 사람은 머리 쪽을 어림해서 가렸어요. 빗나갔는지 확인하세요.");
   if (!bars.length) li("자동으로 찾은 게 없어요. 가릴 곳이 있다면 사진 위를 끌어서 막대를 그리세요.");
+  // 민감도 때문에 숨은 후보: 그림·흐린 사진·작은 사람은 점수가 낮게 나와 여기로 빠진다
+  const hidden = p.dets.filter((d) => d.score < state.sens &&
+    (d.cls === PERSON || (SCREENS[d.cls] && state.screens) || (VEHICLES[d.cls] && state.vehicles)));
+  if (hidden.length) {
+    const top = Math.max(...hidden.map((d) => d.score));
+    const to = Math.max(Number(sens.min), Math.floor(top / 0.05) * 0.05);   // 가장 높은 후보까지 보이는 슬라이더 칸
+    const more = hidden.filter((d) => d.score >= to).length;
+    const e = document.createElement("li"); e.className = "hint";
+    e.append(`민감도 아래에 후보가 ${hidden.length}개 더 있어요(가장 높은 점수 ${top.toFixed(2)}). 놓친 사람이 없는지 보려면 `);
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "linkbtn"; b.textContent = `민감도 ${to.toFixed(2)}에서 ${more}개 더 보기`;
+    b.addEventListener("click", () => { sens.value = to.toFixed(2); state.sens = Number(sens.value); showSens(); render(); });
+    e.append(b);
+    ul.appendChild(e);
+  }
   li(`처리 시간 ${p.ms}ms (이 기기 안에서)`);
 }
 
