@@ -155,7 +155,7 @@ footer b{color:var(--dim);font-weight:400}
     <div class="strip" id="strip" hidden aria-label="고른 사진들"></div>
     <div class="frame"><canvas id="view" aria-label="가린 결과 미리보기"></canvas></div>
     <p class="howto"><kbd>누르기</kbd> 막대 켜기/끄기 &nbsp; <kbd>끌기</kbd> 새 막대 &nbsp; 노란 점선 = 꺼 둔 막대</p>
-    <div class="warn" id="warn">AI는 사람을 <b>놓칠 수 있어요.</b> 공개 시험 사진에서 크게 찍힌 사람은 <b>15명 중 1명</b>, 작게 찍힌 사람은 <b>3명 중 2명</b>을 놓쳤어요. 뒷모습, 거울·포스터 속 사람, 번호판·송장은 직접 확인하고 끌어서 가리세요.</div>
+    <div class="warn" id="warn">AI는 사람을 <b>놓칠 수 있어요.</b> 공개 시험 사진에서 크게 찍힌 사람은 <b>15명 중 1명</b>, 작게 찍힌 사람은 <b>3명 중 2명</b>을 놓쳤어요. 뒷모습, 거울·포스터 속 사람, 종이 임시번호판, 택배 송장은 직접 확인하고 끌어서 가리세요.</div>
     <div class="row">
       <button class="primary" id="save" type="button">이 사진 저장</button>
       <button id="saveall" type="button" hidden>모두 저장</button>
@@ -174,8 +174,9 @@ footer b{color:var(--dim);font-weight:400}
       <div>
         <span class="lbl">추가로 가리기</span>
         <label class="check"><input type="checkbox" id="screens" checked> 화면 (모니터·노트북·휴대폰)</label>
-        <label class="check" style="margin-top:8px"><input type="checkbox" id="vehicles"> 차량 (자동차·버스·트럭·오토바이)</label>
-        <div class="note">번호판만 따로 찾지는 못해서 차 전체를 가려요.</div>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="plates" checked> 차량 번호판</label>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="vehicles"> 차량 전체 (자동차·버스·트럭·오토바이)</label>
+        <div class="note">번호판은 기본으로 가려요. 차 전체는 사진을 크게 덮어서 꺼 두었어요.</div>
       </div>
       <div class="wide">
         <label class="lbl" for="sens">민감도</label>
@@ -191,15 +192,16 @@ footer b{color:var(--dim);font-weight:400}
     <ul>
       <li><b>얼굴을 못 찾은 사람</b>(뒷모습, 작게 찍힘)은 사람 상자 위쪽을 어림해서 가려요. 누워 있거나 잘린 사람은 빗나갈 수 있어요.</li>
       <li>얼굴 모델은 사진 전체를 640px로 줄여서 봐서, 큰 사진 속 <b>아주 작은 얼굴</b>은 놓치기 쉬워요.</li>
-      <li><b>번호판, 택배 송장, 이름표, 화면 속 글자</b>는 찾지 못해요. 차량은 차 전체를 가리는 것만 돼요. 나머지는 직접 끌어서 가리세요.</li>
+      <li><b>택배 송장, 이름표, 화면 속 글자</b>는 찾지 못해요. 직접 끌어서 가리세요.</li>
+      <li><b>번호판</b>은 공개 한국 번호판 사진 50장 중 46장을 찾았어요. 종이 임시번호판은 놓쳤고, 차 없는 사진 408장 중 12장에서는 휴대폰 케이스·그릇·간판 같은 것을 번호판으로 잘못 가렸어요.</li>
       <li>사람을 놓치는 비율은 공개 사진 400장으로 잰 값이라, 내 사진에서는 다를 수 있어요.</li>
       <li>저장본은 새로 그린 그림이라 EXIF가 없어요. 원본 파일은 그대로 남아요.</li>
     </ul>
   </details>
 
   <footer>
-    처리: 이 브라우저 안 (ONNX Runtime Web) · 처음 한 번 약 20MB를 받은 뒤엔 인터넷 없이 동작<br>
-    <b>모델</b> Ultralytics YOLO26n (AGPL-3.0), OpenCV Zoo YuNet 얼굴 (MIT) · <b>소스</b> AGPL-3.0
+    처리: 이 브라우저 안 (ONNX Runtime Web) · 처음 한 번 약 30MB를 받은 뒤엔 인터넷 없이 동작<br>
+    <b>모델</b> Ultralytics YOLO26n (AGPL-3.0), OpenCV Zoo YuNet 얼굴 (MIT), open-image-models 번호판 (MIT) · <b>소스</b> AGPL-3.0
   </footer>
 </main>
 

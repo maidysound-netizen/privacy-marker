@@ -5,11 +5,13 @@
 const ORT_VER = "1.20.1"; // vendor/ort 에 들어 있는 버전
 const MODEL_URL = "model/yolo26n.onnx";
 const FACE_URL = "model/face_detection_yunet_2023mar.onnx"; // OpenCV Zoo YuNet (MIT)
+const PLATE_URL = "model/yolo-v9-t-640-license-plates-end2end.onnx"; // open-image-models (MIT)
 const SIZE = 640;              // 두 모델 모두 입력이 640×640
 const MIN_SCORE = 0.10;        // 한 번 추론해 두고, 슬라이더는 이 위에서만 거른다
 const NMS_IOU = 0.7;           // Ultralytics 기본값
 const FACE_MIN = 0.6;          // 얼굴 점수 기준. 근거는 README '측정' 절 (사람 없는 사진에서의 잘못 가림)
 const FACE_NMS = 0.3;          // OpenCV FaceDetectorYN 기본값
+const PLATE_MIN = 0.3;         // 번호판 점수 기준. 근거는 README '번호판' 절 (놓치는 쪽이 더 손해)
 const MAX_SIDE = 4096;         // 아주 큰 사진은 메모리 때문에 이 크기로 줄여 저장
 const MAX_PHOTOS = 50;         // 한 번에 다루는 사진 수 (휴대폰 메모리)
 const PERSON = 0;
@@ -21,11 +23,11 @@ const view = $("view"), ctx = view.getContext("2d");
 
 // 설정은 모든 사진에 같이 적용, 막대 끄기·직접 그린 막대는 사진마다 따로
 const state = {
-  session: null, face: null,
-  photos: [],        // {blob, name, W, H, dets, faces, off:Set, manual:[], status, thumb, seen}
+  session: null, face: null, plate: null,
+  photos: [],        // {blob, name, W, H, dets, faces, plates, off:Set, manual:[], status, thumb, seen}
   cur: -1,
   cache: null,       // {photo, canvas} 지금 보고 있는 사진의 원본 크기 캔버스
-  cover: "face", screens: true, vehicles: false, sens: 0.20,
+  cover: "face", screens: true, plates: true, vehicles: false, sens: 0.20,
 };
 const cur = () => state.photos[state.cur];
 
@@ -45,6 +47,11 @@ async function loadModels() {
   } catch (e) {
     // 얼굴 모델이 없어도 사람 상자 위쪽 어림값으로 가릴 수 있다
     console.error(e);
+  }
+  try {
+    state.plate = await ort.InferenceSession.create(PLATE_URL, { executionProviders: ["wasm"] });
+  } catch (e) {
+    console.error(e);   // 번호판 모델이 없어도 나머지는 동작한다
   }
   setStatus(state.face ? "준비됐어요. 사진을 고르세요(여러 장 가능)." : "준비됐어요. (얼굴 모델 없이 머리 위치를 어림합니다)", "ok");
   pump();
@@ -131,6 +138,20 @@ async function detectFaces(lb, W, H) {
   return nms(cand, FACE_NMS, false).map((k, i) => ({ id: "f" + i, ...k }));
 }
 
+// 번호판: YOLOv9 end2end 출력 [n, 7] = 배치, x1, y1, x2, y2, 종류, 점수 (640 레터박스 좌표, NMS 끝난 상태)
+async function detectPlates(lb, W, H) {
+  if (!state.plate) return [];
+  const o = await state.plate.run({ [state.plate.inputNames[0]]: toTensor(lb.d, false) });
+  const t = o[state.plate.outputNames[0]], d = t.data, n = t.dims[0];
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const r = d.subarray(i * 7, i * 7 + 7);
+    if (r[6] < MIN_SCORE) continue;
+    out.push({ id: "p" + out.length, score: r[6], box: unletter([r[1], r[2], r[3], r[4]], lb, W, H) });
+  }
+  return out;
+}
+
 // ---------- 막대 계산 ----------
 function headBox([x1, y1, x2, y2], W) {
   const w = x2 - x1, h = y2 - y1;
@@ -171,6 +192,12 @@ function autoBars(p) {
       return cx >= d.box[0] && cx <= d.box[2] && cy >= d.box[1] && cy <= d.box[3];
     })) continue;   // 몸 전체로 이미 덮였다
     add(f.id, "얼굴", f.score, faceBar(f.box, p.W, p.H));
+  }
+  // 번호판 상자는 글자에 딱 붙어 있어 테두리까지 덮게 조금 넓힌다
+  if (state.plates) for (const q of p.plates || []) {
+    if (q.score < PLATE_MIN) continue;
+    const [x1, y1, x2, y2] = q.box, w = x2 - x1, h = y2 - y1;
+    add(q.id, "번호판", q.score, [Math.max(0, x1 - 0.08 * w), Math.max(0, y1 - 0.15 * h), Math.min(p.W, x2 + 0.08 * w), Math.min(p.H, y2 + 0.15 * h)]);
   }
   for (const d of p.dets) {
     if (d.score < state.sens) continue;
@@ -230,6 +257,7 @@ async function pump() {
       const lb = letterboxPixels(c, p.W, p.H);
       p.dets = await detectObjects(lb, p.W, p.H);
       p.faces = await detectFaces(lb, p.W, p.H);
+      p.plates = await detectPlates(lb, p.W, p.H);
       p.ms = Math.round(performance.now() - t);
       p.status = "done";
       if (p === cur()) state.cache = { photo: p, canvas: c };
@@ -311,8 +339,10 @@ function renderList(bars) {
   const faces = count((b) => b.label === "얼굴"), guess = count((b) => b.label.startsWith("사람"));
   const screens = count((b) => Object.values(SCREENS).includes(b.label));
   const cars = count((b) => Object.values(VEHICLES).includes(b.label));
+  const plates = count((b) => b.label === "번호판");
   const parts = [`얼굴 ${faces}개`, state.cover === "body" ? `사람 ${guess}명` : `얼굴 못 찾은 사람 ${guess}명`];
   if (state.screens) parts.push(`화면 ${screens}개`);
+  if (state.plates) parts.push(`번호판 ${plates}개`);
   if (state.vehicles) parts.push(`차량 ${cars}대`);
   const li = (t) => { const e = document.createElement("li"); e.textContent = t; ul.appendChild(e); };
   li(`자동으로 찾은 것: ${parts.join(", ")}` + (p.manual.length ? ` · 직접 그린 막대 ${p.manual.length}개` : "") +
@@ -508,6 +538,7 @@ document.querySelectorAll("[data-cover]").forEach((b) => b.addEventListener("cli
 }));
 $("screens").addEventListener("change", (e) => { state.screens = e.target.checked; render(); });
 $("vehicles").addEventListener("change", (e) => { state.vehicles = e.target.checked; render(); });
+$("plates").addEventListener("change", (e) => { state.plates = e.target.checked; render(); });
 const sens = $("sens");
 const showSens = () => { $("sensv").textContent = Number(sens.value).toFixed(2); };
 sens.addEventListener("input", () => { state.sens = Number(sens.value); showSens(); render(); });
